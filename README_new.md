@@ -30,22 +30,26 @@ Sistema de gestión de tarjetas con autenticación Keycloak integrada.
 ## 🚀 Instalación
 
 1. **Clonar el repositorio**
+
    ```bash
    git clone <repository-url>
    cd front-shak-tarjetas
    ```
 
 2. **Instalar dependencias**
+
    ```bash
    npm install
    ```
 
 3. **Configurar variables de entorno**
+
    ```bash
    cp .env.example .env.local
    ```
-   
+
    Edita `.env.local` con tu configuración:
+
    ```env
    NEXTAUTH_URL=http://localhost:3000
    NEXTAUTH_SECRET=tu-clave-secreta
@@ -70,7 +74,7 @@ En tu cliente Keycloak `nextjs-client`:
 - **Access Type**: `confidential`
 - **Standard Flow**: `Enabled`
 - **Direct Access Grants**: `Disabled`
-- **Valid Redirect URIs**: 
+- **Valid Redirect URIs**:
   - `http://localhost:3000/api/auth/callback/keycloak`
   - `https://tu-dominio.vercel.app/api/auth/callback/keycloak`
 - **Web Origins**: `*` o dominios específicos
@@ -93,12 +97,14 @@ src/
 ## 🎯 Funcionalidades
 
 ### Autenticación
+
 - Inicio de sesión con Keycloak
 - Manejo automático de tokens JWT
 - Protección de rutas
 - Cierre de sesión seguro
 
 ### Gestión de Tarjetas
+
 - **Registrar**: Crear nuevos identificadores
 - **Consultar**: Verificar saldo y estado
 - **Recargar**: Agregar fondos con tarjeta de crédito
@@ -116,6 +122,7 @@ src/
 ### Vercel
 
 1. **Configurar variables de entorno en Vercel:**
+
    ```env
    NEXTAUTH_URL=https://tu-app.vercel.app
    NEXTAUTH_SECRET=tu-clave-produccion
@@ -125,6 +132,7 @@ src/
    ```
 
 2. **Actualizar Keycloak:**
+
    - Agregar URL de producción a Valid Redirect URIs
    - Configurar Web Origins para el dominio de producción
 
@@ -137,14 +145,17 @@ src/
 ## 🐛 Solución de Problemas
 
 ### Error: "Invalid client_secret"
+
 - Verificar `KEYCLOAK_SECRET` en `.env.local`
 - Regenerar client secret en Keycloak
 
 ### Error: "Invalid redirect URI"
+
 - Verificar Valid Redirect URIs en Keycloak
 - Asegurar que incluya `/api/auth/callback/keycloak`
 
 ### Error de CORS
+
 - Configurar Web Origins en Keycloak
 - Verificar configuración de dominio
 
@@ -190,6 +201,7 @@ Este proyecto está bajo la Licencia MIT - ver [LICENSE](LICENSE) para detalles.
 ## 🆘 Soporte
 
 Para soporte y preguntas:
+
 - Crear un issue en GitHub
 - Revisar [KEYCLOAK_SETUP.md](./KEYCLOAK_SETUP.md) para configuración
 - Verificar logs de Keycloak y aplicación
