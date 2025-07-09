@@ -1,23 +1,73 @@
 "use client";
 
-import { useState } from "react";
-import { FiCheckCircle, FiInfo, FiAlertTriangle } from "react-icons/fi";
+import { useState, useEffect } from "react";
+import {
+  FiCheckCircle,
+  FiInfo,
+  FiAlertTriangle,
+  FiX,
+  FiRefreshCw,
+} from "react-icons/fi";
 import { Navigation } from "../components/Navigation";
 import { useAuth } from "../hooks/useAuth";
 
 export default function Demo() {
   const { isAuthenticated, user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
+  const [envStatus, setEnvStatus] = useState(null);
+  const [keycloakStatus, setKeycloakStatus] = useState(null);
+  const [isCheckingConfig, setIsCheckingConfig] = useState(false);
+
+  // Función para verificar las variables de entorno
+  const checkEnvironment = async () => {
+    try {
+      const response = await fetch("/api/debug/env");
+      const data = await response.json();
+      setEnvStatus(data);
+    } catch (error) {
+      setEnvStatus({
+        status: "ERROR",
+        message: `Error checking environment: ${error.message}`,
+      });
+    }
+  };
+
+  // Función para verificar la conectividad con Keycloak
+  const checkKeycloak = async () => {
+    try {
+      const response = await fetch("/api/debug/keycloak");
+      const data = await response.json();
+      setKeycloakStatus(data);
+    } catch (error) {
+      setKeycloakStatus({
+        status: "ERROR",
+        message: `Error checking Keycloak: ${error.message}`,
+      });
+    }
+  };
+
+  // Función para verificar toda la configuración
+  const checkConfiguration = async () => {
+    setIsCheckingConfig(true);
+    await checkEnvironment();
+    await checkKeycloak();
+    setIsCheckingConfig(false);
+  };
+
+  // Verificar configuración al cargar la página
+  useEffect(() => {
+    checkConfiguration();
+  }, []);
 
   const steps = [
     {
       title: "Configuración de Variables de Entorno",
       description: "Configura tu archivo .env.local",
       content: `# Copia el archivo .env.example a .env.local
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=tu-clave-secreta-aqui
-KEYCLOAK_ID=nextjs-client
-KEYCLOAK_SECRET=tu-client-secret-keycloak
+NEXTAUTH_URL=https://front-shak-tarjetas.vercel.app
+NEXTAUTH_SECRET=una_clave_secreta_larga_y_segura
+KEYCLOAK_CLIENT_ID=nextjs-client
+KEYCLOAK_CLIENT_SECRET=tu-client-secret-keycloak
 KEYCLOAK_ISSUER=http://keycloak-aci-eastus.eastus.azurecontainer.io:8080/realms/master`,
       type: "code",
     },
@@ -96,6 +146,100 @@ KEYCLOAK_ISSUER=http://keycloak-aci-eastus.eastus.azurecontainer.io:8080/realms/
                 Usuario: {user.name || user.email || "Usuario de Keycloak"}
               </div>
             )}
+          </div>
+
+          {/* Diagnóstico de Configuración */}
+          <div className="mb-8 p-4 rounded-lg border bg-gray-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">
+                Diagnóstico de Configuración
+              </h3>
+              <button
+                onClick={checkConfiguration}
+                disabled={isCheckingConfig}
+                className="flex items-center space-x-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              >
+                <FiRefreshCw
+                  className={`h-4 w-4 ${
+                    isCheckingConfig ? "animate-spin" : ""
+                  }`}
+                />
+                <span>Verificar</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Estado de Variables de Entorno */}
+              <div className="p-3 bg-white rounded border">
+                <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                  {envStatus?.status === "OK" ? (
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                  ) : envStatus?.status === "ERROR" ? (
+                    <FiX className="text-red-500 mr-2" />
+                  ) : (
+                    <FiRefreshCw className="text-gray-400 mr-2 animate-spin" />
+                  )}
+                  Variables de Entorno
+                </h4>
+                {envStatus && (
+                  <div className="text-sm">
+                    <p
+                      className={
+                        envStatus.status === "OK"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }
+                    >
+                      {envStatus.message}
+                    </p>
+                    {envStatus.missing && envStatus.missing.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-red-600 font-medium">
+                          Variables faltantes:
+                        </p>
+                        <ul className="list-disc list-inside text-red-600">
+                          {envStatus.missing.map((variable) => (
+                            <li key={variable}>{variable}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Estado de Conexión a Keycloak */}
+              <div className="p-3 bg-white rounded border">
+                <h4 className="font-medium text-gray-800 mb-2 flex items-center">
+                  {keycloakStatus?.status === "OK" ? (
+                    <FiCheckCircle className="text-green-500 mr-2" />
+                  ) : keycloakStatus?.status === "ERROR" ? (
+                    <FiX className="text-red-500 mr-2" />
+                  ) : (
+                    <FiRefreshCw className="text-gray-400 mr-2 animate-spin" />
+                  )}
+                  Conexión a Keycloak
+                </h4>
+                {keycloakStatus && (
+                  <div className="text-sm">
+                    <p
+                      className={
+                        keycloakStatus.status === "OK"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }
+                    >
+                      {keycloakStatus.message}
+                    </p>
+                    {keycloakStatus.issuer && (
+                      <p className="text-gray-600 mt-1 break-all">
+                        Issuer: {keycloakStatus.issuer}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Navegación de pasos */}
@@ -190,6 +334,55 @@ KEYCLOAK_ISSUER=http://keycloak-aci-eastus.eastus.azurecontainer.io:8080/realms/
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Estado de la configuración */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                {isCheckingConfig ? (
+                  <FiRefreshCw className="animate-spin text-blue-600 mt-1 flex-shrink-0" />
+                ) : envStatus?.status === "OK" ? (
+                  <FiCheckCircle className="text-green-500 mt-1 flex-shrink-0" />
+                ) : (
+                  <FiX className="text-red-500 mt-1 flex-shrink-0" />
+                )}
+                <div className="flex-1">
+                  <h3 className="font-medium text-gray-900">
+                    Estado de la Configuración
+                  </h3>
+                  <div className="text-sm text-gray-700">
+                    {isCheckingConfig
+                      ? "Verificando configuración..."
+                      : envStatus?.status === "OK"
+                      ? "✔️ Configuración correcta"
+                      : envStatus?.status === "ERROR"
+                      ? `❌ ${envStatus.message}`
+                      : "⚠️ Configuración incompleta"}
+                  </div>
+                </div>
+                <button
+                  onClick={checkConfiguration}
+                  className="p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100"
+                  title="Revisar configuración"
+                >
+                  <FiRefreshCw />
+                </button>
+              </div>
+
+              {keycloakStatus && (
+                <div className="mt-4">
+                  <h4 className="font-medium text-gray-900">
+                    Estado de Keycloak
+                  </h4>
+                  <div className="text-sm text-gray-700">
+                    {keycloakStatus.status === "OK"
+                      ? "✔️ Conexión a Keycloak correcta"
+                      : keycloakStatus.status === "ERROR"
+                      ? `❌ ${keycloakStatus.message}`
+                      : "⚠️ Estado de Keycloak desconocido"}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
